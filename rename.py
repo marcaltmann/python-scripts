@@ -2,26 +2,44 @@ from pathlib import Path
 import re
 import subprocess
 
-path = Path(__file__).parent
+import click
 
-for file in path.iterdir():
-    if not file.is_file():
-        continue
 
-    name = file.name
-    stem = file.stem
+@click.command()
+@click.argument(
+    "directory", type=click.Path(exists=True, file_okay=False, dir_okay=True)
+)
+@click.option(
+    "-n",
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Do not perform renames, just show them.",
+)
+def rename(directory, dry_run=False):
+    path = Path(directory)
 
-    pattern = re.compile(r"(\d{4})(\d{2})(\d{2})_")
-    match = pattern.match(name)
-    if not match:
-        continue
+    for from_file in path.iterdir():
+        if not from_file.is_file():
+            continue
 
-    result = re.sub(pattern, r"\1_\2_\3.", name)
-    file2 = file.with_name(result)
+        name = from_file.name
 
-    from_path = str(file)
-    to_path = str(file2)
+        pattern = re.compile(r"^(\d{2,4})(\d{2})(\d{2})_")
+        match = pattern.match(name)
+        if not match:
+            continue
 
-    cmd = "/usr/bin/git mv %s %s" % (from_path, to_path)
-    #print(cmd)
-    subprocess.call(cmd, shell=True)
+        result = re.sub(pattern, r"\1_\2_\3.", name)
+        to_file = from_file.with_name(result)
+
+        cmd = "git mv %s %s" % (from_file.name, to_file.name)
+
+        if dry_run:
+            print(cmd)
+        else:
+            subprocess.run(["git", "mv", from_file.name, to_file.name], cwd=str(path))
+
+
+if __name__ == "__main__":
+    rename()
