@@ -27,40 +27,49 @@ def parse_datetime(datetime_str: str) -> datetime:
     default=False,
     help="Do not move files, just print them.",
 )
-def organize(source, destination, dry_run=False):
+@click.option(
+    "-x",
+    "--xmp-files",
+    is_flag=True,
+    default=False,
+    help="Also move accompanying xmp files.",
+)
+def organize(source, destination, dry_run=False, xmp_files=False):
     src_path = Path(source)
     dest_path = Path(destination)
     if src_path == dest_path:
         raise click.BadParameter("Source and destination paths cannot be the same.")
 
-    for from_file in src_path.iterdir():
-        if not from_file.suffix == ".NEF":
+    for nef_file in src_path.iterdir():
+        if not nef_file.suffix == ".NEF":
             continue
 
-        image = Image.open(from_file)
+        xmp_file = nef_file.with_suffix(".NEF.xmp")
+        has_xmp_file = xmp_file.exists()
+
+        image = Image.open(nef_file)
         exif = image.getexif()
 
-        date_time_str = exif.get(Base.DateTime)
-        date_time_original_str = exif.get(Base.DateTimeOriginal)
+        datetime_original_str = exif.get(Base.DateTimeOriginal)
+        datetime_original = parse_datetime(datetime_original_str)
 
-        datetime_original = parse_datetime(date_time_original_str)
-        dir_name = datetime_original.strftime("%Y-%m-%d")
-        dir_path = dest_path / dir_name
-        if not dir_path.exists():
-            dir_path.mkdir()
+        date_dir_name = datetime_original.strftime("%Y-%m-%d")
+        date_dir_path = dest_path / date_dir_name
+        if not date_dir_path.exists():
+            date_dir_path.mkdir()
 
-        to_file = dir_path / from_file.name
-
-        print(f"{from_file} -> {to_file}")
+        nef_file_new = date_dir_path / nef_file.name
+        print(f"{nef_file} -> {nef_file_new}")
 
         if not dry_run:
-            from_file.rename(to_file)
+            nef_file.rename(nef_file_new)
 
-        # TODO: Copy XMP files as well?
-        # TODO: ExifTools Date/Time shift feature should be used.
-        # e.g. like that:
-        # '2005:01:27 20:30:00'  '6'       +   '2005:01:28 02:30:00'
-        # TODO: Remove executable flags
+        if xmp_files and has_xmp_file:
+            xmp_file_new = date_dir_path / xmp_file.name
+            print(f"{xmp_file} -> {xmp_file_new}")
+
+            if not dry_run:
+                xmp_file.rename(xmp_file_new)
 
 
 if __name__ == "__main__":
