@@ -13,6 +13,5 @@ all_files_dirs = list(path_ext_drive.rglob("*"))
 file_count = len(all_files_dirs)
 
 print(
-    locale.format_string("%d", file_count, grouping=True),
-    "Dateien und Verzeichnisse"
+    locale.format_string("%d", file_count, grouping=True), "Dateien und Verzeichnisse"
 )

@@ -1,7 +1,5 @@
 from datetime import datetime
 from pathlib import Path
-import re
-import subprocess
 
 import click
 
@@ -14,9 +12,7 @@ def parse_datetime(datetime_str: str) -> datetime:
 
 
 @click.command()
-@click.argument(
-    "source", type=click.Path(exists=True, file_okay=False, dir_okay=True)
-)
+@click.argument("source", type=click.Path(exists=True, file_okay=False, dir_okay=True))
 @click.argument(
     "destination", type=click.Path(exists=True, file_okay=False, dir_okay=True)
 )
